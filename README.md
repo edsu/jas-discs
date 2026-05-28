@@ -50,3 +50,10 @@ disc TOC:
     index 01 { LBA:  62999, MSF: 14:01:74 }
 ```
 
+I got some [advice](https://digipres.club/@ed/116635874334395478) that pointed
+me in the direction of these CDs being a TASCAM DAW backup, which gave Claude
+some more to chew on, which can be found in the transcript.md file. It ended up
+writing a few utilities for working with the cdrdao output. I should be able to
+extract tracks and the mix from the raw wav file that is generated from
+`extract_tracks.py`.
+
