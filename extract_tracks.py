@@ -21,29 +21,49 @@ SAMPLE_RATE    = 44100
 CHUNK_SAMPLES  = 4096
 SILENCE_THRESH = 500         # 24-bit amplitude threshold (out of 8388607)
 MIN_GAP_SECS   = 0.5         # minimum silence to count as a track boundary
-TASCAM_SIG     = b"dSNGMNG"
+TASCAM_SIGS    = (b"dSNGMNG", b"SNGMNG")
 FF_THRESHOLD   = 0.70
+OTHER_THRESHOLD = 0.65
+SUSTAIN_CHUNKS = 3
+MIN_FAT_CHUNKS = 50
 FAT_SCAN_CHUNK = 0x800
 
 
 def find_audio_offset(f, size):
     f.seek(0)
     header = f.read(0x10000)
-    if TASCAM_SIG not in header:
-        print("Warning: Tascam signature (dSNGMNG) not found — may not be a Tascam backup")
+    if not any(sig in header for sig in TASCAM_SIGS):
+        print("Warning: Tascam signature not found — may not be a Tascam backup")
 
-    in_fat = False
+    seen_fat = False
+    fat_run = 0
+    run = 0
+    candidate = None
     offset = 0
     while offset < size:
         f.seek(offset)
         chunk = f.read(FAT_SCAN_CHUNK)
         if not chunk:
             break
-        ff_pct = sum(1 for b in chunk if b == 0xFF) / len(chunk)
+        ff_pct   = sum(1 for b in chunk if b == 0xFF) / len(chunk)
+        zero_pct = sum(1 for b in chunk if b == 0x00) / len(chunk)
+        other_pct = 1.0 - ff_pct - zero_pct
         if ff_pct > FF_THRESHOLD:
-            in_fat = True
-        elif in_fat:
-            return offset
+            fat_run += 1
+            if fat_run >= MIN_FAT_CHUNKS:
+                seen_fat = True
+            run = 0
+            candidate = None
+        elif seen_fat and other_pct > OTHER_THRESHOLD:
+            if candidate is None:
+                candidate = offset
+            run += 1
+            if run >= SUSTAIN_CHUNKS:
+                return candidate
+        else:
+            fat_run = 0
+            run = 0
+            candidate = None
         offset += FAT_SCAN_CHUNK
     return None
 
@@ -140,6 +160,12 @@ if __name__ == "__main__":
             print("Error: could not find audio region")
             sys.exit(1)
         print(f"  Audio starts at 0x{audio_offset:08X} ({audio_offset})")
+
+        audio_path = os.path.join(out_dir, f"{base}_audio.wav")
+        print(f"Extracting full audio to {audio_path} ...")
+        write_wav(audio_path, f, audio_offset, size - ((size - audio_offset) % 3))
+        dur = seconds(size - audio_offset)
+        print(f"  Done: {dur:.1f}s")
 
         print("Scanning for track boundaries (this may take a moment)...")
         tracks = find_track_boundaries(f, audio_offset, size)
