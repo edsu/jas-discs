@@ -39,6 +39,24 @@ sectors are unreadable, which seems to be normal for these CDs.
 
 The tracks are cut out of the WAV by hand, in Audacity or another DAW.
 
+## extract.sh
+
+To make the WAVs again for discs already in the bag, for example after a
+change to `extract_audio.py`:
+
+```
+./extract.sh 2>&1 | tee logs/extract.log
+```
+
+With no arguments it takes every disc whose WAV isn't in the manifest yet;
+name discs to redo particular ones (`./extract.sh my_girl radio_dog`). For
+each it extracts the WAV from the `.bin`, plays the same three clips as
+`rip.sh`, and asks music, static, replay or skip. Music puts the WAV in
+`backups/data/` and its MD5 in the manifest. Static keeps it out of the bag
+(removing any older unlisted WAV, so the bag stays valid) and lists the disc
+at the end. Skipped discs come up again next time. `BAG` names a different
+bag directory.
+
 ### Dependencies
 
 `rip.sh` only runs on macOS. It checks for each of these when it starts:
