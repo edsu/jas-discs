@@ -1,5 +1,60 @@
 # JAS CD Recovery
 
+This repository contains some programs for extracting audio from TASCAM 788 data backup CDs which are stored in a proprietary format that you need the TASCAM equipment to read and extract. Since I was unable to get the CD-RW device working in order to extract the WAV files themselves from the CDs I opted to work with Claude (Opus 5) to reverse-engineer a program for extracting the data from a dump of the raw CD data.
+
+## rip.sh
+
+Put a backup disc in the drive, find its device with `diskutil list`, and run:
+
+```
+mkdir -p logs
+./rip.sh song_name /dev/disk4 2>&1 | tee logs/song_name.log
+```
+
+For each disc it:
+
+1. Images the whole disc with ddrescue, reading the uncached `/dev/rdisk4`
+   in 2352-byte sectors, to `song_name.raw`, with ddrescue's mapfile in
+   `song_name.map`.
+2. Reads the disc's 2048-byte user data with cdrdao to `song_name.bin`.
+3. Checks every sector of the `.raw` with `verify_raw.py`: the sync
+   pattern, the sector's own address, its EDC checksum, and its user data
+   against the `.bin`. This decides whether the disc passes.
+4. Extracts all the audio on the disc from the `.bin` as one mono WAV,
+   `song_name.wav`, with `extract_audio.py`, which works out whether the disc
+   holds 16-bit or 24-bit audio and where the samples start.
+5. Plays three 10 second clips of the WAV (`preview_wav.py` and `afplay`)
+   and asks whether it sounds like music or static.
+6. Adds MD5s for all of it to the manifest.
+
+Everything goes in `backups/`, a [BagIt](https://www.rfc-editor.org/rfc/rfc8493)
+bag: the files in `backups/data/` and their checksums in
+`backups/manifest-md5.txt`. A third argument names a different bag
+directory. `backups/` is git-ignored.
+
+Use a new name for each disc. Running it again with the same name resumes from
+that disc's mapfile and only rereads what's missing, which is how to retry a
+disc that failed. The disc doesn't count as failed if only the last one or two
+sectors are unreadable, which seems to be normal for these CDs.
+
+The tracks are cut out of the WAV by hand, in Audacity or another DAW.
+
+### Dependencies
+
+`rip.sh` only runs on macOS. It checks for each of these when it starts:
+
+| Tool | For | Install |
+|---|---|---|
+| [GNU ddrescue](https://www.gnu.org/software/ddrescue/) | the raw image | `brew install ddrescue` |
+| [cdrdao](https://cdrdao.sourceforge.net/) | the user-data copy | `brew install cdrdao` |
+| [uv](https://docs.astral.sh/uv/) | runs `verify_raw.py`, which needs Python 3.11+ and numpy, and installs them itself | `brew install uv` |
+| Python 3 | `extract_audio.py` and `preview_wav.py` (standard library only) | `brew install python` |
+| `diskutil`, `afplay`, `md5`, `drutil` | disc size and unmounting, the preview, checksums, ejecting | come with macOS |
+
+It was used with GNU ddrescue 1.30, cdrdao 1.2.6, and an Apple USB SuperDrive.
+
+## Working Notes
+
 Using notes from: 
 
     disktype -d -i disc_image
