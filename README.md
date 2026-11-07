@@ -112,7 +112,7 @@ writing a few utilities for working with the cdrdao output. I should be able to
 extract tracks and the mix from the raw wav file that is generated from
 `extract_tracks.py`.
 
-## Advice for exporting
+### Advice for exporting
 
 I have the TASCAM 788 and CD burner set up. But according to Claude I need to upgrade the firmware to v2.0.2 which allows export of individual tracks to WAV on CD. Then I can rip those on my computer using my CD drive. Apparently the pre-mixes will be lost in the process. Claude also recommended that I copy the raw data from the CDs before doing anything else with them, which is what I was planning on doing anyway using the brute force ripping method from above.
 
@@ -122,7 +122,7 @@ https://www.tascamforums.com/threads/tascam-788-firmware-iso-files.8194/
 
 I've put a post on that thread asking and also directly emailed user Bravin to see if he still has it. Unfortunately it doesn't appear to be in the Wayback machine.
 
-## Upgraded
+### Upgraded
 
 (months pass...)
 
@@ -135,7 +135,7 @@ $ mkisofs -J -iso-level 1 -V TASCAM788 -o /tmp/788fw.iso /tmp/fw
 $ hdiutil burn /tmp/788fw.iso
 ```
 
-## Backing up
+### Backing up
 
 Claude recommended creating a backup of the CDs before attempting to do anything with them in the TASCAM, which makes sense. Here's what I arrived at, based on earlier experiments:
 
@@ -154,7 +154,7 @@ This seemed to work, at least for one CD. I put it in backups as `backups/exp_no
 (Later: it hadn't worked. That image, now in `x/`, is scrambled. See
 "Backups, take two" below.)
 
-## Reading Backup and Writing WAVs
+### Reading Backup and Writing WAVs
 
 I'm able to read the CD backups on the TASCAM and listen to them!
 
@@ -167,7 +167,7 @@ The panic went away when I deleted every song from the TASCAM except the one
 being exported. Maybe it was running out of disk space while assembling the
 WAVs. So the workflow is: restore one song, export it, delete it, repeat.
 
-## Backups, take two
+### Backups, take two
 
 Ripping the first backup discs turned up a few problems with the original
 `rip.sh`:
@@ -232,7 +232,7 @@ script's header, so it doesn't depend on which Python is current. The last
 one or two sectors of each disc are unreadable, which seems to be normal at the
 end of a burned track.
 
-## TASCAM 788 Recovery
+### TASCAM 788 Recovery
 
 I did get the firmware upgrade from the TASCAM website, which let me upgrade
 John's TASCAM 788 to get the WAV export option. It is here as 788_sys.022
